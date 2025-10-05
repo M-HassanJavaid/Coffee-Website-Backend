@@ -11,7 +11,7 @@ const optionsValueSchema = new mongoose.Schema({
         required: true,
         min: 0
     }
-})
+}, {_id: false})
 
 const optionsSchema = new mongoose.Schema({
     isRequired: {
@@ -27,8 +27,33 @@ const optionsSchema = new mongoose.Schema({
     values:{
         type: [optionsValueSchema],
         required: true,
+        validate:{
+            validator: (value) => {
+                if (value.length < 2) {
+                    return false
+                }
+                return true
+            },
+
+            message: 'An option should have minimum 2 values.'
+        }
     }
-})
+} , {_id : false})
+
+const imageSchema = new mongoose.Schema({
+    url:{
+        type: String,
+        validate: {
+            validator: (value) => validator.isURL(value) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(value),
+            message: 'This is not a valid image URL.'
+        },
+        required: true
+    }, 
+    id:{
+        type: String,
+        required: true
+    }
+}, {_id: false})
 
 const productSchema = new mongoose.Schema({
     name: {
@@ -62,12 +87,8 @@ const productSchema = new mongoose.Schema({
     },
 
     image: {
-        type: String,
-        required: true,
-        validate: {
-            validator: (value) => validator.isURL(value) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(value),
-            message: 'This is not a valid image URL.'
-        }
+        type: imageSchema,
+        required: true
     },
 
     category: {
@@ -115,6 +136,12 @@ const productSchema = new mongoose.Schema({
     options:{
         type: [optionsSchema],
         default: []
+    },
+
+    discountedPrice:{
+        type: Number,
+        min: 1,
+        required: true
     }
 
 }, { timestamps: true }

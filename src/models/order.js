@@ -1,4 +1,40 @@
 const mongoose = require('mongoose');
+const validator = require('validator')
+
+const addressSchema = new mongoose.Schema({
+  phone: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: (value) => validator.isMobilePhone(value, 'any'),
+      message: 'Phone number is not valid!'
+    }
+  },
+  street: { 
+    type: String, 
+    required: true 
+  },
+  city: { 
+    type: String, 
+    required: true 
+  },
+  state: { 
+    type: String, 
+    required: true 
+  },
+  postalCode: { 
+    type: String, 
+    required: true 
+  },
+  country: { 
+    type: String, 
+    default: "Pakistan" 
+  },
+  landmark: { 
+    type: String, 
+    default: "Not Given" 
+  }
+});
 
 const selectedOptionsSchema = new mongoose.Schema({
     name: {
@@ -9,13 +45,41 @@ const selectedOptionsSchema = new mongoose.Schema({
     value: {
         type: String,
         required: true,
-    },
-
-    extraPrice: {
-        type: Number,
-        min: 0,
-        required: true
     }
+})
+
+const priceSchema = new mongoose.Schema({
+  basePrice: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+
+  discountedPrice:{
+    type: Number,
+    required: true,
+    min: 0
+  },
+
+  extraPrice:{
+    type : Number,
+    required: true,
+    min: 0
+  },
+
+  total:{
+    type: Number,
+    required: true,
+    min: 0
+  },
+
+  discount:{
+    type: Number,
+    required: true,
+    min: 0,
+    max: 99,
+  }
+
 })
 
 const productSchema = new mongoose.Schema({
@@ -25,9 +89,8 @@ const productSchema = new mongoose.Schema({
         required: true
     },
     priceAtOrder:{
-        type: Number,
+        type: priceSchema,
         required: true,
-        min: 1
     },
     quantity:{
         type: Number,
@@ -40,8 +103,8 @@ const productSchema = new mongoose.Schema({
         maxLength: 300,
     },
     selectedOptions:{
-        type: []
-    }
+        type: [selectedOptionsSchema]
+    },
 });
 
 const orderSchema = new mongoose.Schema(
@@ -54,26 +117,23 @@ const orderSchema = new mongoose.Schema(
 
     items: {
         type: [productSchema],
-        required: true
+        required: true,
+        validate: {
+          validator: (value)=> value.length > 0,
+          message: "Items cannot be empty!"
+        }
     },
 
-    totalAmount: {
+    totalPrice: {
       type: Number,
       required: true, // total after discount + quantity
-      min: 1,
-    },
-
-    discountApplied: {
-      type: Number,
-      default: 0, // total discount percentage or amount applied
       min: 0,
-      max: 99
     },
 
     paymentMethod: {
       type: String,
-      enum: ["cash_on_delivery", "card", "wallet"],
-      default: "cash_on_delivery",
+      enum: ["cash_on_delivery", "card", "wallet" ],
+      required: true
     },
 
     paymentStatus: {
@@ -89,19 +149,22 @@ const orderSchema = new mongoose.Schema(
     },
 
     address: {
-      phone: { type: String, required: true },
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      postalCode: { type: String, required: true },
-      country: { type: String, default: "Pakistan" },
-      landMark: { type: String  , }
+      type: addressSchema,
+      required: true
     },
 
-    notes: {
+    note: {
       type: String,
       maxLength: 300,
+      default: "Not provided!"
     },
+
+    orderId:{
+      unique: true,
+      required: true,
+      index: true,
+      type: String
+    }
   },
   { timestamps: true }
 );
