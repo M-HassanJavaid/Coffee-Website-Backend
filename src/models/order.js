@@ -34,7 +34,7 @@ const addressSchema = new mongoose.Schema({
     type: String, 
     default: "Not Given" 
   }
-});
+} , {_id: false});
 
 const selectedOptionsSchema = new mongoose.Schema({
     name: {
@@ -46,7 +46,7 @@ const selectedOptionsSchema = new mongoose.Schema({
         type: String,
         required: true,
     }
-})
+} , {_id: false})
 
 const priceSchema = new mongoose.Schema({
   basePrice: {
@@ -61,7 +61,7 @@ const priceSchema = new mongoose.Schema({
     min: 0
   },
 
-  extraPrice:{
+  totalExtraPrice:{
     type : Number,
     required: true,
     min: 0
@@ -80,7 +80,7 @@ const priceSchema = new mongoose.Schema({
     max: 99,
   }
 
-})
+} , {_id: false})
 
 const productSchema = new mongoose.Schema({
     product:{
@@ -88,7 +88,7 @@ const productSchema = new mongoose.Schema({
         ref: 'Product',
         required: true
     },
-    priceAtOrder:{
+    price:{
         type: priceSchema,
         required: true,
     },
@@ -105,7 +105,7 @@ const productSchema = new mongoose.Schema({
     selectedOptions:{
         type: [selectedOptionsSchema]
     },
-});
+} , {_id: false});
 
 const orderSchema = new mongoose.Schema(
   {
@@ -124,7 +124,7 @@ const orderSchema = new mongoose.Schema(
         }
     },
 
-    totalPrice: {
+    totalAmount: {
       type: Number,
       required: true, // total after discount + quantity
       min: 0,
@@ -144,7 +144,7 @@ const orderSchema = new mongoose.Schema(
 
     orderStatus: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+      enum: ["pending", "confirmed", "delivered", "cancelled"],
       default: "pending",
     },
 

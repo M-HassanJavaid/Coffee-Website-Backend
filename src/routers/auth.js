@@ -6,10 +6,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer')
 const { getVerficationTemp } = require('../utility_Function/verificationHtmlTemp.js');
+const { Cart } = require('../models/cart.js')
 
 //middlewares
 
-const { checkAuth } = require('../middleware/checkAuth.js')
+const { checkAuth } = require('../middleware/checkAuth.js');
 
 const authRouter = express.Router();
 
@@ -57,8 +58,7 @@ authRouter.post('/signup', async (req, res) => {
             email: email,
             password: hashedPassword,
             role: role || 'user',
-            isVerified: false,
-            cart: []
+            isVerified: false
         });
 
         const savedUser = await newUser.save();
@@ -121,13 +121,28 @@ authRouter.get('/verifyEmail', async (req, res) => {
         let { userId } = decode;
         let user = await User.findById(userId);
         if (!user) throw new Error('User not found!')
+        if (user.isVerified) {
+            return res.json({
+                ok: false,
+                message: 'Email is already verified!'
+            })
+        }
+        
+        let userCart = new Cart({
+            user: userId,
+            items: [],
+            totalAmount: 0
+        })
+
+        let createdCart = await userCart.save();
         user.isVerified = true;
+        user.cart = createdCart._id;
         await user.save();
 
         res.redirect('https://www.google.com/?verified=true');
     } catch (error) {
         console.log(error.message)
-        res.redirect('https://www.google.com/?verified=false')
+        res.send(error.message)
     }
 });
 

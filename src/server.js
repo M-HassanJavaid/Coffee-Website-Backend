@@ -10,6 +10,7 @@ const { authRouter } = require('./routers/auth.js')
 const { productRouter } = require('./routers/product.js')
 const { userRouter } = require('./routers/user.js')
 const { orderRouter } = require('./routers/order.js')
+const { cartRouter } = require('./routers/Cart.js')
 
 // Middleware
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use('/auth' , authRouter);
 app.use('/product' , productRouter);
 app.use('/user' , userRouter)
 app.use('/order' , orderRouter)
+app.use('/cart' , cartRouter)
 
 // Routes
 app.get('/', (req, res) => {

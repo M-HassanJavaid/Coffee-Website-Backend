@@ -1,82 +1,144 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 const { checkAuth } = require('../middleware/checkAuth.js');
 const { Order } = require('../models/order.js');
 const { nanoid } = require('nanoid')
 const { validateOptions } = require('../utility_Function/ValidateOptions.js')
 const { calculatePrice } = require('../utility_Function/CalculatePrice.js')
+const { checkAdmin } = require('../middleware/checkAdmin.js');
+const { Cart } = require('../models/cart.js');
+const { validateAndUpdateCartItems } = require('../utility_Function/updateCartItem.js');
 
 
 const orderRouter = express.Router();
 
-orderRouter.post('/create' , checkAuth , async (req , res)=>{
+orderRouter.get('/all', checkAuth, checkAdmin, async (req, res) => {
     try {
-        const { userId } = req.user
-        if (!userId) {
-            return res.status(401).json({
+
+        let orders = await Order.find()
+            .populate([
+                {
+                    path: "user",
+                    select: '-password'
+                },
+                {
+                    path: "items.product"
+                }
+            ]);
+
+        res.status(200).json({
+            ok: false,
+            message: "Order details has sent!",
+            orders: orders
+        })
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+});
+
+orderRouter.get('/id/:id', checkAuth, checkAdmin, async (req, res) => {
+
+    try {
+        let id = req.params.id;
+
+        let order = await Order.findOne({ orderId: id })
+            .populate([
+                {
+                    path: "user",
+                    select: '-password'
+                },
+                {
+                    path: "items.product"
+                }
+            ]);
+
+        if (!order) {
+            return res.status(400).json({
                 ok: false,
-                message: 'User id not found!'
+                message: 'Inavlid Order ID'
             })
         }
 
-        const { items , address , note , paymentMethod } = req.body;
+        res.json({
+            ok: true,
+            message: "Order Details has send!",
+            order: order
+        })
 
-        if (!items || !address || !paymentMethod) {
-            return res.status(409).json({
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+    }
+
+})
+
+// collect order from cart 
+
+orderRouter.post('/checkout', checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const { paymentMethod, address, note } = req.body;
+
+        if (!address || !paymentMethod) {
+            return res.send({
                 ok: false,
-                message: 'Invalid Order!'
+                message: 'You did not give payment method or address.'
             })
         }
 
+        let userCart = await Cart.findOne({ user: new ObjectId(userId) });
 
-        //Validating Options
-
-        let isValid = [];
-        
-        for (const i of items) {
-            let validation = await validateOptions(i.selectedOptions , i.product)
-            isValid.push(validation)
+        if (!userCart || (userCart.items.length === 0)) {
+            return res.status(404).json({
+                ok: false,
+                message: "Your cart is empty!"
+            })
         }
 
-        for (const valid of isValid) {
-            if (!valid.valid) {
-                return res.status(400).json({
-                    ok: false,
-                    message: valid.message
-                })
-            }
+        console.log(userCart.items)
+        const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items)
+
+        if (!valid) {
+            return res.status(status).json({
+                ok: false,
+                message: message
+            })
         }
 
-
-
-        //Calculating Price
-
-
-        let itemsWithTotalPrice = await calculatePrice(items , isValid)
-
-        let totalPrice = 0;
-
-        for (const i of itemsWithTotalPrice) {
-            totalPrice += Number(i.priceAtOrder.total);
-        }
 
         let newOrder = new Order({
             user: userId,
-            note,
-            address,
-            items: itemsWithTotalPrice,
-            orderStatus: (paymentMethod === "cash_on_delivery") ? 'confirmed' : 'pending',
-            paymentStatus: 'pending',
+            totalAmount: totalPrice,
             paymentMethod,
-            totalPrice,
-            orderId: `ORD-${nanoid(8)}`
-        })
+            orderStatus: paymentMethod === 'cash_on_delivery' ? 'confirmed' : 'pending',
+            address,
+            note,
+            orderId: `ORD-${nanoid(8)}`,
+            items
+        });
 
-        let savedOrder = await newOrder.save();
+        let createdOrder = await newOrder.save();
 
-        res.status(200).json({
+        userCart.items = [];
+        userCart.totalAmount = 0;
+
+        await userCart.save()
+
+        res.json({
             ok: true,
-            message: "Order has created successfully",
-            orderId: savedOrder.orderId
+            message: 'Order has placed successfully.',
+            orderId: createdOrder.orderId
         })
 
     } catch (error) {
@@ -87,7 +149,27 @@ orderRouter.post('/create' , checkAuth , async (req , res)=>{
     }
 })
 
+orderRouter.get('/me', checkAuth, async (req, res) => {
+    try {
+        let userId = req.user.userId;
 
+        let userOrders = await Order.find({user: new ObjectId(userId)});
+
+        res.status(200).json({
+            ok: true,
+            message: 'Your previous order has sent!',
+            orders: userOrders
+        })
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+})
 
 module.exports = {
     orderRouter

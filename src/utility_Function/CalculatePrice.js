@@ -2,10 +2,11 @@ const { Product } = require("../models/product")
 
 
 async function calculatePrice(items, productWithTotalExtraPrice) {
+
   let itemsWithPrice = await Promise.all(
     items.map(async (i) => {
       let productId = i.product;
-      let productDetails = await Product.findById(productId);
+      let productDetails = await Product.findById(productId).lean();
       let productExtraPrice = 0;
 
       for (const p of productWithTotalExtraPrice) {
@@ -18,15 +19,14 @@ async function calculatePrice(items, productWithTotalExtraPrice) {
       let prices = {
         basePrice: productDetails.price,
         discountedPrice: productDetails.discountedPrice,
-        extraPrice: productExtraPrice,
+        totalExtraPrice: Number(productExtraPrice) * Number(i.quantity),
         discount: productDetails.discount,
-        total:
-          (Number(productDetails.discountedPrice) + Number(productExtraPrice)) * Number(i.quantity),
+        total: (Number(productDetails.discountedPrice) + Number(productExtraPrice)) * Number(i.quantity),
       };
 
       return {
         ...i,
-        priceAtOrder: prices,
+        price: prices,
       };
     })
   );
