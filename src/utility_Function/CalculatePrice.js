@@ -24,6 +24,9 @@ async function calculatePrice(items, productWithTotalExtraPrice) {
         total: (Number(productDetails.discountedPrice) + Number(productExtraPrice)) * Number(i.quantity),
       };
 
+
+      i = i.toObject();
+
       return {
         ...i,
         price: prices,

@@ -11,6 +11,7 @@ const { productRouter } = require('./routers/product.js')
 const { userRouter } = require('./routers/user.js')
 const { orderRouter } = require('./routers/order.js')
 const { cartRouter } = require('./routers/Cart.js')
+const { Cart } = require("./models/cart.js")
 
 // Middleware
 app.use(express.json());
@@ -37,4 +38,15 @@ connectToDb()
     })
     .catch((error)=>{
         console.log(error.message)
-    })
+    });
+
+
+// (async (params) => {
+//     let cart = await Cart.findById('68e774fec256b5893e909fe5');
+//     console.log(cart);
+//     let cartItems = cart.items;
+//     console.log(cartItems);
+//     for (const item of cartItems) {
+//         console.log('Signle item => ' + item)
+//     }
+// })()

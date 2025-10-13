@@ -4,18 +4,37 @@ const { validateOptions } = require("./ValidateOptions.js");
 async function validateAndUpdateCartItems(cartItems) {
     try {
 
-       let productOptionData = [];
+        if (!cartItems) {
+            return {
+                status: 404,
+                valid: false,
+                message: 'No product found in cart!'
+            }
+        }
 
-        for (const i of cartItems) {
-            let validation = await validateOptions(i.selectedOptions, i.product)
-            if (!validation.valid) {
+        let productOptionData = [];
+
+        for (let i = 0; i < cartItems.length; i++) {
+
+            const p = cartItems[i];
+
+            let { valid, notAvailable, message, totalExtraPrice , productId} = await validateOptions(p.selectedOptions, p.product);
+
+
+            if (!valid) {
                 return {
                     status: 400,
-                    valid: validation.valid,
-                    message: validation.message
+                    valid: valid,
+                    message: message
                 }
             }
-            productOptionData.push(validation)
+
+            if (valid && notAvailable) {
+                cartItems.splice(i , 1);
+                break;
+            }
+
+            productOptionData.push({ valid, message, totalExtraPrice , productId})
         }
 
         let itemsWithTotalPrice = await calculatePrice(cartItems, productOptionData);
@@ -23,8 +42,10 @@ async function validateAndUpdateCartItems(cartItems) {
         let totalPrice = 0;
 
         for (const product of itemsWithTotalPrice) {
-            totalPrice += Number(product.price.total)
+            totalPrice += Number(product.price.total);
         }
+
+
 
 
         return {

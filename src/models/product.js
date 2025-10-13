@@ -123,7 +123,7 @@ const productSchema = new mongoose.Schema({
         default: true
     },
 
-    adddedInCart: {
+    addedInCart: {
         type: Number,
         default: 0,
     },

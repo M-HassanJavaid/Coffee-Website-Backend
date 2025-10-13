@@ -2,12 +2,13 @@ const express = require('express');
 const { Product } = require('../models/product.js');
 const { upload } = require('../middleware/upload.js');
 const { checkAdmin } = require('../middleware/checkAdmin.js');
-const { checkAuth } = require('../middleware/checkAuth.js')
-
+const { checkAuth } = require('../middleware/checkAuth.js');
+const { calculatePopularityScore } = require('../utility_Function/calcPopularitoryScore.js');
+const { cloudinary } = require('../config/cloudinary.js');
 
 let productRouter = express.Router();
 
-productRouter.post('/add', checkAuth , checkAdmin , upload.single('image'), async (req, res) => {
+productRouter.post('/add', checkAuth, checkAdmin, upload.single('image'), async (req, res) => {
     try {
         console.log(req.body)
         let { name, description, price, discount, category, options } = req.body;
@@ -120,7 +121,7 @@ productRouter.get('/all', async (req, res) => {
     }
 });
 
-productRouter.get('/:id' , async (req , res)=>{
+productRouter.get('/id/:id', async (req, res) => {
     try {
         let id = req.params.id;
         let product = await Product.findById(id);
@@ -144,13 +145,13 @@ productRouter.get('/:id' , async (req , res)=>{
     }
 });
 
-productRouter.put('/edit/:id' , checkAuth , checkAdmin, upload.single('image'), async (req , res)=>{
+productRouter.put('/edit/:id', checkAuth, checkAdmin, upload.single('image'), async (req, res) => {
     try {
         let id = req.params.id;
         let updates = req.body;
         console.log(updates);
-              
-        let allowUpdates = ['name' , 'description' , 'price' , 'discount' , 'category' , 'isAvailaible' , 'options' ];
+
+        let allowUpdates = ['name', 'description', 'price', 'discount', 'category', 'isAvailaible', 'options'];
 
         if (!updates) {
             return res.status(404).json({
@@ -175,13 +176,13 @@ productRouter.put('/edit/:id' , checkAuth , checkAdmin, upload.single('image'), 
             }
         }
 
-        let updatedProduct = await Product.findByIdAndUpdate(id , updates , {
+        let updatedProduct = await Product.findByIdAndUpdate(id, updates, {
             returnDocument: 'after',
             new: true,
             runValidators: true
         });
 
-        if(!updatedProduct){
+        if (!updatedProduct) {
             return res.status(404).json({
                 ok: false,
                 message: 'Product not found.'
@@ -194,7 +195,7 @@ productRouter.put('/edit/:id' , checkAuth , checkAdmin, upload.single('image'), 
         })
 
     } catch (error) {
-        
+
         res.status(500).json({
             ok: false,
             message: error.message
@@ -203,7 +204,7 @@ productRouter.put('/edit/:id' , checkAuth , checkAdmin, upload.single('image'), 
     }
 });
 
-productRouter.delete('/delete/:id' , checkAuth , checkAdmin, async (req , res)=>{
+productRouter.delete('/delete/:id', checkAuth, checkAdmin, async (req, res) => {
     try {
         let id = req.params.id;
 
@@ -220,6 +221,64 @@ productRouter.delete('/delete/:id' , checkAuth , checkAdmin, async (req , res)=>
             ok: true,
             message: 'Product has deleted!',
             product: deletedProduct
+        })
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+});
+
+productRouter.put('/click/:productId', async (req , res) => {
+    try {
+        let productId = req.params.productId;
+
+        let product = await Product.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Product not found!'
+            })
+        }
+
+        product.impressions = product.impressions + 1;
+        let newPopularitoryScore = calculatePopularityScore(product);
+        product.popularityScore = newPopularitoryScore;
+        await product.save();
+
+        res.status(200).json({
+            ok: true,
+            message: 'Product click has recorded!'
+        })
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+    }
+});
+
+productRouter.get('/popular/:quantity' , async (req , res)=>{
+    try {
+        let quantity = req.params.quantity;
+        let products = await Product.find().sort({popularityScore : -1}).limit(quantity)
+
+        if (!products) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Products not found!'
+            })
+        }
+
+        res.status(200).json({
+            ok: true,
+            message: `Top ${quantity} popular products has sent to you!`,
+            products
         })
 
     } catch (error) {

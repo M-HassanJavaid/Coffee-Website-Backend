@@ -7,7 +7,17 @@ async function validateOptions(orderedOptions, productId) {
         return {
             valid: false,
             message: "Inavlid Product Id",
-            extraPrice: 0
+            totalExtraPrice: 0,
+        }
+    }
+
+    if (!product.isAvailaible) {
+        return {
+            valid: true,
+            message: `${product.name} is sold out!`,
+            totalExtraPrice: 0,
+            notAvailable: true,
+            productId
         }
     }
 
@@ -79,12 +89,15 @@ async function validateOptions(orderedOptions, productId) {
             return {
                 valid: false,
                 totalExtraPrice: 0,
-                message: `"${orderedOption.value}" is not a valid value for "${orderedOption.name}".`
+                message: `"${orderedOption.value}" is not a valid value for "${orderedOption.name}".`,
             };
         }
     }
 
     // ✅ All checks passed
+
+    // console.log("Total extra price for each product =>" + totalExtraPrice)
+
     return {
         productId: productId,
         valid: true,

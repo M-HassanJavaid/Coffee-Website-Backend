@@ -4,11 +4,11 @@ const { ObjectId } = mongoose.Types;
 const { checkAuth } = require('../middleware/checkAuth.js');
 const { Order } = require('../models/order.js');
 const { nanoid } = require('nanoid')
-const { validateOptions } = require('../utility_Function/ValidateOptions.js')
-const { calculatePrice } = require('../utility_Function/CalculatePrice.js')
 const { checkAdmin } = require('../middleware/checkAdmin.js');
 const { Cart } = require('../models/cart.js');
 const { validateAndUpdateCartItems } = require('../utility_Function/updateCartItem.js');
+const { calculatePopularityScore } = require('../utility_Function/calcPopularitoryScore.js');
+const { Product } = require('../models/product.js');
 
 
 const orderRouter = express.Router();
@@ -82,6 +82,25 @@ orderRouter.get('/id/:id', checkAuth, checkAdmin, async (req, res) => {
 
 })
 
+//function to update product popularitory score
+async function updatePopularitoryScore(items) {
+    try {
+        for (const item of items) {
+            let productId = item.product.toString();
+            let product = await Product.findById(productId);
+            let quantity = item.quantity;
+            product.addedInCart = product.addedInCart - quantity;
+            product.sales = product.sales + quantity;
+            let popularityScore = calculatePopularityScore(product);
+            product.popularityScore = popularityScore;
+            await product.save()
+        }
+
+    } catch (error) {
+        console.log(error.message)
+    }
+}
+
 // collect order from cart 
 
 orderRouter.post('/checkout', checkAuth, async (req, res) => {
@@ -106,7 +125,6 @@ orderRouter.post('/checkout', checkAuth, async (req, res) => {
             })
         }
 
-        console.log(userCart.items)
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items)
 
         if (!valid) {
@@ -130,16 +148,19 @@ orderRouter.post('/checkout', checkAuth, async (req, res) => {
 
         let createdOrder = await newOrder.save();
 
-        userCart.items = [];
-        userCart.totalAmount = 0;
-
-        await userCart.save()
-
+        
         res.json({
             ok: true,
             message: 'Order has placed successfully.',
             orderId: createdOrder.orderId
         })
+        
+        userCart.items = [];
+        userCart.totalAmount = 0;
+
+        await userCart.save()
+        
+        updatePopularitoryScore(items)
 
     } catch (error) {
         res.status(500).json({
@@ -153,11 +174,11 @@ orderRouter.get('/me', checkAuth, async (req, res) => {
     try {
         let userId = req.user.userId;
 
-        let userOrders = await Order.find({user: new ObjectId(userId)});
+        let userOrders = await Order.find({ user: new ObjectId(userId) });
 
         res.status(200).json({
             ok: true,
-            message: 'Your previous order has sent!',
+            message: 'Your previous orders has sent!',
             orders: userOrders
         })
 
@@ -165,6 +186,144 @@ orderRouter.get('/me', checkAuth, async (req, res) => {
 
         res.status(500).json({
             ok: false,
+            message: error.message
+        })
+
+    }
+});
+
+async function popularitoryScoreForCancelOrder(items) {
+    try {
+        for (const item of items) {
+            let productId = item.product.toString();
+            let product = await Product.findById(productId);
+            product.sales = product.sales - 1;
+            let newPopularitoryScore = calculatePopularityScore(product);
+            product.popularityScore = newPopularitoryScore;
+            await product.save()
+        }
+    } catch (error) {
+        console.log(error.message)
+    }
+}
+
+orderRouter.put('/cancel/:orderId', checkAuth, async (req, res) => {
+    try {
+        let userId = req.user.userId;
+        let orderId = req.params.orderId;
+
+        let order = await Order.findOne({ orderId: orderId, user: new ObjectId(userId) });
+
+        if (!order) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No order found by this user!'
+            })
+        }
+
+        order.orderStatus = 'cancelled';
+        await order.save();
+
+        res.status(200).json({
+            ok: true,
+            message: 'Order has successfully cancelled!'
+        })
+
+        popularitoryScoreForCancelOrder(order.items)
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+});
+
+orderRouter.get('/me/:orderId', checkAuth, async (req, res) => {
+    try {
+        let userId = req.user.userId;
+        let orderId = req.params.orderId;
+
+        let order = await Order.findOne({ user: userId, orderId: orderId });
+
+        if (!order) {
+            return res.status(404).json({
+                ok: false,
+                message: "Order not found!"
+            })
+        }
+
+        res.status(200).json({
+            ok: true,
+            message: 'Order has sent to you!',
+            order
+        })
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+})
+
+orderRouter.put('/update/:orderId', checkAuth, checkAdmin, async (req, res) => {
+    try {
+        let orderId = req.params.orderId;
+        let order = await Order.findOne({ orderId });
+
+        let { orderStatus, paymentStatus } = req.body;
+
+        if (!orderStatus && !paymentStatus) {
+            return res.status(400).json({
+                ok: false,
+                message: 'You did not provide any update!'
+            })
+        }
+
+        let validOrderStatuses = ["pending", "confirmed", "delivered", "cancelled"];
+        let validPaymentStatuses = ["pending", "paid", "failed"];
+
+        if (orderStatus) {
+
+            if (!(validOrderStatuses.includes(orderStatus))) {
+                return res.status(400).json({
+                    ok: false,
+                    message: "Order status is not valid."
+                })
+            }
+
+            order.orderStatus = orderStatus;
+        }
+
+        if (paymentStatus) {
+            
+            if (!(validPaymentStatuses.includes(paymentStatus))) {
+                return res.status(400).json({
+                    ok: false,
+                    message: 'payment status is not valid.'
+                })
+            }
+
+            order.paymentStatus = paymentStatus;
+
+        }
+
+        await order.save()
+
+        res.status(200).json({
+            ok: true,
+            message: "order has successfully updated!"
+        })
+
+    } catch (error) {
+
+        res.status(500).json({
+            ok: true,
             message: error.message
         })
 
