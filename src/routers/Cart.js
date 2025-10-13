@@ -89,7 +89,6 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
 
         for (const item of cartItems) {
 
-            console.log('tostring => ' + item)
             if (item.product.toString() === productId && compareOptions(item.selectedOptions, selectedOptions)) {
                 found = true;
 
