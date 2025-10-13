@@ -39,14 +39,3 @@ connectToDb()
     .catch((error)=>{
         console.log(error.message)
     });
-
-
-// (async (params) => {
-//     let cart = await Cart.findById('68e774fec256b5893e909fe5');
-//     console.log(cart);
-//     let cartItems = cart.items;
-//     console.log(cartItems);
-//     for (const item of cartItems) {
-//         console.log('Signle item => ' + item)
-//     }
-// })()

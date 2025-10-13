@@ -4,8 +4,7 @@ const validator = require('validator');
 const { User } = require('../models/user.js')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer')
-const { getVerficationTemp } = require('../utility_Function/verificationHtmlTemp.js');
+const { sendVerificationEmail } = require('../utility_Function/sendVerifcationEmail.js');
 const { Cart } = require('../models/cart.js')
 
 //middlewares
@@ -77,28 +76,14 @@ authRouter.post('/signup', async (req, res) => {
             // secure: true, 
         });
 
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        let isSend = await sendVerificationEmail(savedUser._id, savedUser.email);
 
-        let emailVerificationToken = jwt.sign({
-            userId: savedUser._id
-        }, process.env.JWT_SECRET, { expiresIn: '1h' })
-
-        await transporter.sendMail({
-            from: `"Coffee Club" <${process.env.EMAIL_USER}>`,
-            to: savedUser.email,
-            subject: "Verify your account",
-            html: getVerficationTemp(`http://localhost:8080/auth/verifyEmail?token=${emailVerificationToken}`)
-        });
+        let message = isSend ? 'User have successfully signup. Email verification link has send to your email, now verify your email.' : (
+            'User has successfully signup. But due to some error we could not send verification email.')
 
         res.status(200).json({
             ok: true,
-            message: 'User have successfully signup. Email verification link has send to your email, now verify your email.',
+            message: message,
             user: savedUser
         });
 
@@ -142,7 +127,7 @@ authRouter.get('/verifyEmail', async (req, res) => {
     }
 });
 
-authRouter.get('/refreshToken' , async (req, res) => {
+authRouter.get('/refreshToken', async (req, res) => {
 
     try {
 
@@ -150,8 +135,8 @@ authRouter.get('/refreshToken' , async (req, res) => {
 
         if (!token) throw new Error('Token not found.')
 
-        const decode = await jwt.verify(token , process.env.JWT_SECRET)
-        
+        const decode = await jwt.verify(token, process.env.JWT_SECRET)
+
         let userId = decode.userId;
 
         if (!userId) throw new Error('User id not found!');
@@ -310,8 +295,46 @@ authRouter.put('/changePassword', checkAuth, async (req, res) => {
     }
 });
 
+authRouter.get('/getVerificationEmail' , async (req , res)=>{
+    try {
+        let token = req.cookies.token;
 
+        if (!token) {
+            return res.status(404).json({
+                ok: false,
+                message: "Token not found!"
+            })
+        }
 
+        let decode = jwt.verify(token , process.env.JWT_SECRET);
+        let userId = decode.userId;
+        let userEmail = decode.email;
+
+        if (!userId || !userEmail) {
+            return req.status(404).json({
+                ok: false,
+                message: "User not found!"
+            })
+        }
+
+        let isSend = await sendVerificationEmail(userId , userEmail);
+
+        if (!isSend) throw new Error('due to some error verification email could nt send.')
+
+        res.status(200).json({
+            ok: true,
+            message: 'Email verification link has sent to user email.'
+        })    
+
+    } catch (error) {
+        
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+
+    }
+})
 
 module.exports = {
     authRouter
