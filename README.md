@@ -36,10 +36,9 @@ It includes authentication, cart management, product handling, order management,
 ```
 📦 Coffee-Website-Backend
 ├── 📂 config/            # Database & email configuration
-├── 📂 controllers/       # Handles route logic (auth, cart, order, etc.)
 ├── 📂 middleware/        # Auth checks, error handlers
 ├── 📂 models/            # Mongoose schemas
-├── 📂 routers/            # Express routes
+├── 📂 routers/           # Express routes
 ├── 📂 utility_Function/             # Helper functions
 │   ├── compareOptions.js
 │   ├── validateOptions.js
@@ -90,28 +89,45 @@ The server will start on **http://localhost:5000**.
 |--------|-----------|-------------|
 | POST | `/api/auth/signup` | Register new user |
 | POST | `/api/auth/login` | Login user |
-| GET | `/api/auth/verify/:token` | Verify email |
-| POST | `/api/auth/getVerificationEmail` | send verification email |
+| GET | `/api/auth/verifyEmail` | Verify email |
+| GET | `/api/auth/getVerificationEmail` | send verification email |
+| GET | `/api/auth/refreshToken` | Refresh Authentication token |
+| GET | `/api/auth/logout` | Logout User |
+| PUT | `/api/auth/changePassword` | Change Password |
+
 
 ### 🛍️ Product Routes
 | Method | Endpoint | Description |
 |--------|-----------|-------------|
-| GET | `/api/products` | Get all products |
-| GET | `/api/products/:id` | Get single product |
+| GET | `/api/product/all` | Get all products |
+| GET | `/api/product/id/:id` | Get single product |
+| POST | `/api/product/add` | Add product by only admin |
+| PUT | `/api/product/edit/:id` | Edit product details by admin |
+| DELETE | `/api/delete/:id` | Delete a product by admin |
+| PUT | `/api/product/click/:productId` | Update impressions on product |
+| GET | `/api/product/:quantity` | Get Popular products |
+
+
 
 ### 🛒 Cart Routes
 | Method | Endpoint | Description |
 |--------|-----------|-------------|
 | POST | `/api/cart/add` | Add product to cart |
-| GET | `/api/cart` | Get user cart |
-| DELETE | `/api/cart/:id` | Remove item from cart |
+| GET | `/api/cart/me` | Get user cart |
+| DELETE | `/api/cart/remove/:cartItemId` | Remove item from cart |
+| PUT | `/api/cart/update/:cartItemId` | Update Cart item |
+| DELETE | `/api/cart/clear` | Clear user cart
+
 
 ### 📦 Order Routes
 | Method | Endpoint | Description |
 |--------|-----------|-------------|
-| POST | `/api/orders/create` | Create new order |
-| GET | `/api/orders/user` | Get user orders |
-| GET | `/api/orders/admin` | Get all orders (Admin only) |
+| POST | `/api/order/checkout` | Create new order from cart |
+| GET | `/api/order/me` | Get user all orders by users |
+| GET | `/api/order/all` | Get all orders (Admin only) |
+| PUT | `/api/order/cancel/:orderId` | Cancel order by user |
+| GET | `/api/order/me/:orderId` | get user single order by user |
+| PUT | `/api/order/update/:orderId` | Update order by admin |
 
 ---
 
@@ -135,12 +151,17 @@ Returns a **styled HTML email template** used for email verification links.
 ## 🧾 Example `.env` File
 
 ```env
-PORT=5000
-MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/coffee
-JWT_SECRET=mysecretkey
-EMAIL_USER=coffeeapp@gmail.com
-EMAIL_PASS=app-password
-BASE_URL=http://localhost:5000
+DB_USER= "Your database username"
+DB_PASSWORD= "Database password"
+DB_NAME= "Database name"
+PORT= "Your port"
+ADMIN_KEY= "Admin key for signup as admin"
+EMAIL_USER= "User email"
+EMAIL_PASS= "User email pass"
+JWT_SECRET= "jwt token secret"
+CLOUD_NAME= "cloudinary cloud name"
+CLOUD_API_KEY= "cloudinary api key"
+CLOUD_API_SECRET= "cloudinary api secret"
 ```
 
 ---
