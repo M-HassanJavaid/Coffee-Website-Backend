@@ -40,7 +40,11 @@ It includes authentication, cart management, product handling, order management,
 ├── 📂 models/            # Mongoose schemas
 ├── 📂 routers/           # Express routes
 ├── 📂 utility_Function/             # Helper functions
+|   |── calcPopularitoryScore.js
+|   |── CalculatePrice.js
 │   ├── compareOptions.js
+|   |── sendVerifcationEmail.js
+|   |── updateCartItem.js
 │   ├── validateOptions.js
 │   └── getVerificationTemp.js
 ├── server.js             # Main entry point
@@ -66,12 +70,17 @@ npm install
 ### 3️⃣ Create `.env` file
 Add your environment variables in a `.env` file:
 ```env
-PORT=5000
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret_key
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password
-BASE_URL=http://localhost:5000
+DB_USER= "Your database username"
+DB_PASSWORD= "Database password"
+DB_NAME= "Database name"
+PORT= "Your port"
+ADMIN_KEY= "Admin key for signup as admin"
+EMAIL_USER= "User email"
+EMAIL_PASS= "User email pass"
+JWT_SECRET= "jwt token secret"
+CLOUD_NAME= "cloudinary cloud name"
+CLOUD_API_KEY= "cloudinary api key"
+CLOUD_API_SECRET= "cloudinary api secret"
 ```
 
 ### 4️⃣ Run the server
@@ -146,23 +155,17 @@ Validates selected product options:
 ### 🟤 `getVerificationTemp(verificationLink)`
 Returns a **styled HTML email template** used for email verification links.
 
----
+### 🔵 `sendVerifcationEmail(email, verificationLink)` 
+Sends a verification email to the user with a verification link using **Nodemailer**.
 
-## 🧾 Example `.env` File
+### 🟠 `updateCartItem(cartItemId, newOptions, userId)`
+Updates a cart item with new options and recalculates the price based on the selected options.
 
-```env
-DB_USER= "Your database username"
-DB_PASSWORD= "Database password"
-DB_NAME= "Database name"
-PORT= "Your port"
-ADMIN_KEY= "Admin key for signup as admin"
-EMAIL_USER= "User email"
-EMAIL_PASS= "User email pass"
-JWT_SECRET= "jwt token secret"
-CLOUD_NAME= "cloudinary cloud name"
-CLOUD_API_KEY= "cloudinary api key"
-CLOUD_API_SECRET= "cloudinary api secret"
-```
+### ⚫ `CalculatePrice(basePrice, options)`
+Calculates the total price of a product based on its base price and selected options.
+
+### ⚪ `calcPopularitoryScore(product)`
+Calculates a popularity score for a product based on its clicks, impressions and orders to help rank popular products
 
 ---
 
