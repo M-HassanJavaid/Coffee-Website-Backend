@@ -4,6 +4,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 const { connectToDb } = require('./config/database.js');
 const cookieParser = require('cookie-parser');
+const cors = require('cors')
 
 // Routers
 const { authRouter } = require('./routers/auth.js')
@@ -11,9 +12,16 @@ const { productRouter } = require('./routers/product.js')
 const { userRouter } = require('./routers/user.js')
 const { orderRouter } = require('./routers/order.js')
 const { cartRouter } = require('./routers/Cart.js')
-const { Cart } = require("./models/cart.js")
 
 // Middleware
+
+app.use(cors({
+    origin: [
+    'http://127.0.0.1:5500' , 
+    'http://localhost:5173'],
+    credentials: true
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 
