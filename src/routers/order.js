@@ -16,7 +16,34 @@ const orderRouter = express.Router();
 orderRouter.get('/all', checkAuth, checkAdmin, async (req, res) => {
     try {
 
-        let orders = await Order.find()
+        let orderStatus = req.query.orderStatus;
+        let paymentMethod = req.query.paymentMethod;
+        let paymentStatus = req.query.paymentStatus;
+        let user = req.query.user;
+
+        let filter  = {};
+
+        if (orderStatus) filter.orderStatus = orderStatus;
+        if (paymentMethod) filter.paymentMethod = paymentMethod;
+        if (paymentStatus) filter.paymentStatus = paymentStatus;
+        if (user) filter.user = new ObjectId(user);
+
+        let sorting = {};
+
+        let sort = req.query.sort;
+
+        if (sort === 'lowestPrice') {
+            sorting = { totalAmount : 1 }
+        } else if (sort === 'oldest') {
+            sorting = { createdAt : 1 }
+        } else if (sort === 'highestPrice') {
+            sorting = {totalAmount : -1}
+        } else {
+            sorting = {createdAt : -1}
+        }
+        
+
+        let orders = await Order.find(filter).sort(sorting)
             .populate([
                 {
                     path: "user",
@@ -28,9 +55,10 @@ orderRouter.get('/all', checkAuth, checkAdmin, async (req, res) => {
             ]);
 
         res.status(200).json({
-            ok: false,
+            ok: true,
             message: "Order details has sent!",
-            orders: orders
+            orders: orders,
+            totalOrders : orders.length
         })
 
     } catch (error) {
