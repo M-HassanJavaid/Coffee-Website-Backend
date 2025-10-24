@@ -29,13 +29,13 @@ const optionsSchema = new mongoose.Schema({
         required: true,
         validate:{
             validator: (value) => {
-                if (value.length < 2) {
+                if (value.length === 0) {
                     return false
                 }
                 return true
             },
 
-            message: 'An option should have minimum 2 values.'
+            message: 'An option should have minimum 1 value.'
         }
     }
 } , {_id : false})
