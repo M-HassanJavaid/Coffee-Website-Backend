@@ -72,8 +72,8 @@ authRouter.post('/signup', async (req, res) => {
 
         res.cookie("token", token, {
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            // httpOnly: true, 
-            // secure: true, 
+            secure: true,
+            sameSite: 'none'
         });
 
         let isSend = await sendVerificationEmail(savedUser._id, savedUser.email);
@@ -84,7 +84,8 @@ authRouter.post('/signup', async (req, res) => {
         res.status(200).json({
             ok: true,
             message: message,
-            user: savedUser
+            user: savedUser,
+            isVerificationEmailSent : isSend
         });
 
     } catch (error) {
@@ -175,60 +176,61 @@ authRouter.get('/refreshToken', async (req, res) => {
 
 authRouter.post('/login', async (req, res) => {
     try {
-
-        let { email, password } = req.body;
+        const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(403).send({
-                ok: false,
-                message: 'One or more login field is missing.'
-            })
-        }
-
-        let user = await User.findOne({ email });
-
-        if (!user) {
             return res.status(400).json({
                 ok: false,
-                message: 'User not found!'
-            })
+                message: 'Email and password are required.'
+            });
         }
 
-        let isPasswordMatch = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordMatch) {
-            return res.status(402).json({
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
                 ok: false,
-                message: 'Invalid credentials!'
-            })
+                message: 'User not found.'
+            });
         }
 
-        let token = jwt.sign({
-            userId: user._id,
-            role: user.role,
-            isVerified: user.isVerified,
-            cart: user.cart,
-            name: user.name,
-            email: user.email
-        }, process.env.JWT_SECRET, { expiresIn: '7d' })
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        if (!isPasswordMatch) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Invalid credentials.'
+            });
+        }
+
+        const token = jwt.sign(
+            { userId: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
 
         res.cookie('token', token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            secure: true,
+            sameSite: 'none'
+        });
+
+        console.log('token =>', token)
+        const safeUser = user.toObject();
+        delete safeUser.password;
 
         res.status(200).json({
             ok: true,
-            message: 'User has successfully login.',
-            user: user
-        })
+            message: 'User has successfully logged in.',
+            user: safeUser
+        });
 
     } catch (error) {
         res.status(500).json({
             ok: false,
             message: error.message
-        })
+        });
     }
 });
+
 
 authRouter.get('/logout', (req, res) => {
     res.clearCookie('token');
@@ -295,7 +297,7 @@ authRouter.put('/changePassword', checkAuth, async (req, res) => {
     }
 });
 
-authRouter.get('/getVerificationEmail' , async (req , res)=>{
+authRouter.get('/getVerificationEmail', async (req, res) => {
     try {
         let token = req.cookies.token;
 
@@ -306,7 +308,7 @@ authRouter.get('/getVerificationEmail' , async (req , res)=>{
             })
         }
 
-        let decode = jwt.verify(token , process.env.JWT_SECRET);
+        let decode = jwt.verify(token, process.env.JWT_SECRET);
         let userId = decode.userId;
         let userEmail = decode.email;
 
@@ -317,17 +319,17 @@ authRouter.get('/getVerificationEmail' , async (req , res)=>{
             })
         }
 
-        let isSend = await sendVerificationEmail(userId , userEmail);
+        let isSend = await sendVerificationEmail(userId, userEmail);
 
         if (!isSend) throw new Error('due to some error verification email could nt send.')
 
         res.status(200).json({
             ok: true,
             message: 'Email verification link has sent to user email.'
-        })    
+        })
 
     } catch (error) {
-        
+
         res.status(500).json({
             ok: false,
             message: error.message
