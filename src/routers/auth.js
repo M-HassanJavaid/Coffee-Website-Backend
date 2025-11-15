@@ -62,6 +62,7 @@ authRouter.post('/signup', async (req, res) => {
 
         const savedUser = await newUser.save();
 
+
         const token = jwt.sign({
             userId: savedUser._id,
             role: savedUser.role,
@@ -202,7 +203,7 @@ authRouter.post('/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user._id, role: user.role },
+            { userId: user._id, role: user.role , isVerified : user.isVerified , name: user.name, email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
