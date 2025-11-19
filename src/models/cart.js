@@ -62,7 +62,7 @@ const productSchema = new mongoose.Schema({
   },
   note: {
     type: String,
-    minLength: 3,
+    minLength: 0,
     maxLength: 300,
   },
   selectedOptions: {
