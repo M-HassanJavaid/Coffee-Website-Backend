@@ -76,6 +76,11 @@ async function validateOptions(orderedOptions, productId) {
 
         let foundValue = false;
 
+        // Checking is option required
+        if (!orderedOption.value && !productOption.isRequired) {
+            break;
+        }
+
         for (const optionValue of availableValues) {
             if (optionValue.label === orderedOption.value) {
                 // ✅ Value is valid, add its price
