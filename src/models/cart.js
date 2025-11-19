@@ -8,7 +8,6 @@ const selectedOptionsSchema = new mongoose.Schema({
 
   value: {
     type: String,
-    required: true,
   }
 }, { _id: false })
 
