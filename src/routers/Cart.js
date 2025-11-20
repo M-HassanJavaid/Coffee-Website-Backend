@@ -178,6 +178,8 @@ cartRouter.get('/me', checkAuth, async (req, res) => {
 
     try {
 
+        console.log('Fetching cart for user:', req.user);
+
         let userId = req.user.userId;
 
         let userCart = await Cart.findOne({ user: new ObjectId(userId) })
@@ -198,13 +200,17 @@ cartRouter.get('/me', checkAuth, async (req, res) => {
 
         // valid
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items)
-              
+        
+        console.log('is valid:', valid);
+
         if (!valid) {
             return res.status(status).json({
                 ok: false,
                 message: message
             })
         }
+
+        console.log('Cart items =>', items);
 
         userCart.items = items;
         userCart.totalAmount = totalPrice

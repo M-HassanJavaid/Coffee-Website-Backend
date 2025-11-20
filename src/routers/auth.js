@@ -202,6 +202,8 @@ authRouter.post('/login', async (req, res) => {
             });
         }
 
+        console.log({ userId: user._id, role: user.role , isVerified : user.isVerified , name: user.name, email: user.email })
+
         const token = jwt.sign(
             { userId: user._id, role: user.role , isVerified : user.isVerified , name: user.name, email: user.email },
             process.env.JWT_SECRET,
@@ -210,7 +212,7 @@ authRouter.post('/login', async (req, res) => {
 
         res.cookie('token', token, {
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure: true,
+            secure: false,
             sameSite: 'none'
         });
 

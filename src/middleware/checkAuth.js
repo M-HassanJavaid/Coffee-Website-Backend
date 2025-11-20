@@ -8,9 +8,11 @@ async function checkAuth(req, res, next) {
 
     const decode = jwt.verify(token, process.env.JWT_SECRET);
 
+    console.log('Decoded token:', decode);
+
     if (!(decode.isVerified)) {
       return res.status(401).json({
-        ok: true,
+        ok: false,
         message: 'You are not verified!'
       })
     }
@@ -19,7 +21,6 @@ async function checkAuth(req, res, next) {
 
     next();
   } catch (error) {
-    console.log("Auth Error:", error.message);
     res.status(401).json({
       ok: false,
       message: 'User is not logged in!'
