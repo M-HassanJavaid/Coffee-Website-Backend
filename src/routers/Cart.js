@@ -265,7 +265,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
                 message: "user don't have cart!"
             })
         }
-        let items = userCart.items;
+        // let items = userCart.items;
 
         userCart.items = items.filter((item) => {
             if (item._id.toString() === cartItemId) {
@@ -285,6 +285,20 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
             path: 'items.product',
             select: '-price -discount -discountedPrice'
         });
+
+        const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(updatedCart.items)
+
+
+        if (!valid) {
+            return res.status(status).json({
+                ok: false,
+                message: message
+            })
+        }
+
+
+        updatedCart.items = items;
+        updatedCart.totalAmount = totalPrice;
 
         res.status(200).json({
             ok: true,
@@ -441,12 +455,9 @@ cartRouter.delete('/clear', checkAuth, async (req, res) => {
 
         setImmediate(() => popularitoryScoreOnClearCart(userCart.items));
         userCart.items = [];
-        
-        let updatedCart = await userCart.save()
-        updatedCart = await updatedCart.populate({
-            path: 'items.product',
-            select: '-price -discount -discountedPrice'
-        });
+        userCart.totalAmount = 0;
+
+        let updatedCart = await userCart.save();
 
         res.status(200).json({
             ok: true,
