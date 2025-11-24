@@ -141,7 +141,7 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
         userCart.totalAmount = cartTotalAmount;
 
 
-        await userCart.save();
+        let updatedCart = await userCart.save();
 
         setImmediate(() => popularityScoreForAddToCart(product, quantityAddedInCart) )
         
@@ -149,7 +149,8 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
             return res.json({
                 ok: true,
                 message: 'This product were already in cart, so we increased the quantity.',
-                cartItemId: itemId
+                cartItemId: itemId,
+                cart: updatedCart
             })
         }
         
@@ -157,7 +158,8 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
         res.json({
             ok: true,
             message: 'New product has added to cart.',
-            id: itemId
+            id: itemId,
+            cert: updatedCart
         })
         
 
@@ -273,11 +275,13 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
 
             return true
         });
-        await userCart.save()
+
+        let updatedCart = await userCart.save()
 
         res.status(200).json({
             ok: true,
             message: 'Cart item has successfully removed from cart!',
+            cart: updatedCart
         })
 
     } catch (error) {
@@ -364,7 +368,6 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
             })
         }
 
-        console.log(userCart.items)
         
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items);
         
@@ -378,11 +381,12 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
         userCart.items = items
         userCart.totalAmount = totalPrice;
         
-        await userCart.save()
+        let updatedCart =  await userCart.save()
         
         res.status(200).json({
             ok: true,
-            message: 'Cart Item has successfully updated!'
+            message: 'Cart Item has successfully updated!',
+            cart: updatedCart
         })
 
         if (quantity) updatePopularitoryScoreOnProductUpdate(productId , oldQuantity , quantity) 
@@ -425,11 +429,12 @@ cartRouter.delete('/clear' , checkAuth , async (req , res)=>{
 
         setImmediate(() => popularitoryScoreOnClearCart(userCart.items));
         userCart.items = [];
-        await userCart.save()
+        let updatedCart = await userCart.save()
 
         res.status(200).json({
             ok: true,
-            message: 'Your cart has clear.'
+            message: 'Your cart has clear.',
+            cart: updatedCart
         })
 
     } catch (error) {
