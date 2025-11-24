@@ -267,7 +267,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
         }
         // let items = userCart.items;
 
-        userCart.items = items.filter((item) => {
+        userCart.items = userCart.items.filter((item) => {
             if (item._id.toString() === cartItemId) {
                 let productId = item.product;
                 setImmediate(() => {
