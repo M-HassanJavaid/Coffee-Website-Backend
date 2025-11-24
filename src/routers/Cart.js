@@ -106,11 +106,11 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
 
         }
 
-        
-        if (!found) {
-                itemId = new mongoose.Types.ObjectId();
 
-                cartItems.push({
+        if (!found) {
+            itemId = new mongoose.Types.ObjectId();
+
+            cartItems.push({
                 _id: itemId,
                 product: productId,
                 quantity,
@@ -141,10 +141,14 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
         userCart.totalAmount = cartTotalAmount;
 
 
-        let updatedCart = await userCart.save();
+        let updatedCart = await userCart.save()
+        updatedCart = await updatedCart.populate({
+            path: 'items.product',
+            select: '-price -discount -discountedPrice'
+        });;
 
-        setImmediate(() => popularityScoreForAddToCart(product, quantityAddedInCart) )
-        
+        setImmediate(() => popularityScoreForAddToCart(product, quantityAddedInCart))
+
         if (found) {
             return res.json({
                 ok: true,
@@ -153,15 +157,15 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
                 cart: updatedCart
             })
         }
-        
-        
+
+
         res.json({
             ok: true,
             message: 'New product has added to cart.',
             id: itemId,
             cert: updatedCart
         })
-        
+
 
 
 
@@ -202,7 +206,7 @@ cartRouter.get('/me', checkAuth, async (req, res) => {
 
         // valid
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items)
-        
+
         console.log('is valid:', valid);
 
         if (!valid) {
@@ -217,13 +221,13 @@ cartRouter.get('/me', checkAuth, async (req, res) => {
         userCart.items = items;
         userCart.totalAmount = totalPrice
 
-        
+
         res.status(200).json({
             ok: true,
             message: 'Your cart has sent to you!',
             cart: userCart
         })
-        
+
         await userCart.save()
 
     } catch (error) {
@@ -266,7 +270,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
         userCart.items = items.filter((item) => {
             if (item._id.toString() === cartItemId) {
                 let productId = item.product;
-                setImmediate(()=>{
+                setImmediate(() => {
                     updatePopularitoryScore(productId, item.quantity)
                 })
 
@@ -277,6 +281,10 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
         });
 
         let updatedCart = await userCart.save()
+        updatedCart = await updatedCart.populate({
+            path: 'items.product',
+            select: '-price -discount -discountedPrice'
+        });
 
         res.status(200).json({
             ok: true,
@@ -295,7 +303,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
 });
 
 // function to update product popularitory score on updating product quntity in cart
-async function updatePopularitoryScoreOnProductUpdate(productId , oldQuantity , newQuantity) {
+async function updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, newQuantity) {
     try {
         let product = await Product.findById(productId);
 
@@ -307,17 +315,17 @@ async function updatePopularitoryScoreOnProductUpdate(productId , oldQuantity , 
         await product.save()
 
     } catch (error) {
-        
+
         console.log(error.message)
 
     }
 }
 
-cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
+cartRouter.put('/update/:cartItemId', checkAuth, async (req, res) => {
     try {
         let userId = req.user.userId;
         let cartItemId = req.params.cartItemId;
-        let {note , quantity , selectedOptions} = req.body;
+        let { note, quantity, selectedOptions } = req.body;
 
         if (quantity <= 0) {
             return res.status(400).json({
@@ -325,7 +333,7 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
                 message: 'quantity cannot be 0 or less then 0.'
             })
         }
-        
+
         if (!note && !quantity && !selectedOptions) {
             return res.status(400).json({
                 ok: false,
@@ -333,8 +341,8 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
             })
         }
 
-        let userCart = await Cart.findOne({user: new ObjectId(userId)});
-        
+        let userCart = await Cart.findOne({ user: new ObjectId(userId) });
+
         if (!userCart) {
             return res.status(404).json({
                 ok: false,
@@ -343,13 +351,13 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
         }
 
         let isProductFound = false;
-        let oldQuantity; 
+        let oldQuantity;
         let productId;
 
 
         for (const item of userCart.items) {
             if (item._id.toString() === cartItemId) {
-                
+
                 isProductFound = true;
                 oldQuantity = item.quantity;
                 productId = item.product.toString();
@@ -357,10 +365,10 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
                 if (note) item.note = note;
                 if (quantity) item.quantity = quantity;
                 if (selectedOptions) item.selectedOptions = selectedOptions
-                
+
             }
         }
-        
+
         if (!isProductFound) {
             return res.status(404).json({
                 ok: false,
@@ -368,31 +376,35 @@ cartRouter.put('/update/:cartItemId' , checkAuth , async (req , res)=>{
             })
         }
 
-        
+
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items);
-        
+
         if (!valid) {
             return res.status(status).json({
                 ok: false,
                 message: message
             })
         }
-        
+
         userCart.items = items
         userCart.totalAmount = totalPrice;
-        
-        let updatedCart =  await userCart.save()
-        
+
+        let updatedCart = await userCart.save()
+        updatedCart = await updatedCart.populate({
+            path: 'items.product',
+            select: '-price -discount -discountedPrice'
+        });
+
         res.status(200).json({
             ok: true,
             message: 'Cart Item has successfully updated!',
             cart: updatedCart
         })
 
-        if (quantity) updatePopularitoryScoreOnProductUpdate(productId , oldQuantity , quantity) 
-        
+        if (quantity) updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, quantity)
+
     } catch (error) {
-        
+
         res.status(500).json({
             ok: true,
             message: error.message
@@ -415,10 +427,10 @@ async function popularitoryScoreOnClearCart(items) {
     }
 }
 
-cartRouter.delete('/clear' , checkAuth , async (req , res)=>{
+cartRouter.delete('/clear', checkAuth, async (req, res) => {
     try {
         let userId = req.user.userId;
-        let userCart = await Cart.findOne({user: new Object(userId)});
+        let userCart = await Cart.findOne({ user: new Object(userId) });
 
         if (!userCart) {
             return res.status(404).json({
@@ -429,7 +441,12 @@ cartRouter.delete('/clear' , checkAuth , async (req , res)=>{
 
         setImmediate(() => popularitoryScoreOnClearCart(userCart.items));
         userCart.items = [];
+        
         let updatedCart = await userCart.save()
+        updatedCart = await updatedCart.populate({
+            path: 'items.product',
+            select: '-price -discount -discountedPrice'
+        });
 
         res.status(200).json({
             ok: true,
