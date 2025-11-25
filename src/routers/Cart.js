@@ -420,7 +420,7 @@ cartRouter.put('/update/:cartItemId', checkAuth, async (req, res) => {
     } catch (error) {
 
         res.status(500).json({
-            ok: true,
+            ok: false,
             message: error.message
         })
 
