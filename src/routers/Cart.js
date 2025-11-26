@@ -335,6 +335,44 @@ async function updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, ne
     }
 }
 
+cartRouter.get('/item/:cartItemId', checkAuth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const cartItemId = req.params.cartItemId;
+
+        const userCart = await Cart.findOne({ user: userId }).populate('items.product');
+
+        if (!userCart) {
+            return res.status(404).json({
+                ok: false,
+                message: "User cart not found."
+            });
+        }
+
+        const cartItem = userCart.items.id(cartItemId);
+
+        if (!cartItem) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Cart item not found'
+            });
+        }
+
+        res.status(200).json({
+            ok: true,
+            message: 'Cart item sent successfully!',
+            item: cartItem.toObject()
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        });
+    }
+});
+
+
 cartRouter.put('/update/:cartItemId', checkAuth, async (req, res) => {
     try {
         let userId = req.user.userId;
