@@ -72,9 +72,10 @@ authRouter.post('/signup', async (req, res) => {
         }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.cookie("token", token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure: true,
-            sameSite: 'none'
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         let isSend = await sendVerificationEmail(savedUser._id, savedUser.email);
@@ -86,7 +87,7 @@ authRouter.post('/signup', async (req, res) => {
             ok: true,
             message: message,
             user: savedUser,
-            isVerificationEmailSent : isSend
+            isVerificationEmailSent: isSend
         });
 
     } catch (error) {
@@ -202,18 +203,19 @@ authRouter.post('/login', async (req, res) => {
             });
         }
 
-        console.log({ userId: user._id, role: user.role , isVerified : user.isVerified , name: user.name, email: user.email })
+        console.log({ userId: user._id, role: user.role, isVerified: user.isVerified, name: user.name, email: user.email })
 
         const token = jwt.sign(
-            { userId: user._id, role: user.role , isVerified : user.isVerified , name: user.name, email: user.email },
+            { userId: user._id, role: user.role, isVerified: user.isVerified, name: user.name, email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, {
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure: false,
-            sameSite: 'none'
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         console.log('token =>', token)

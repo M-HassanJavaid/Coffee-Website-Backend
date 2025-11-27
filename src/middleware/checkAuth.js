@@ -4,9 +4,12 @@ require('dotenv').config();
 async function checkAuth(req, res, next) {
   try {
     const { token } = req.cookies;
+    console.log( "token found =>" + token)
     if (!token) throw new Error("No token found");
 
     const decode = jwt.verify(token, process.env.JWT_SECRET);
+
+    console.log(decode)
 
     console.log('Decoded token:', decode);
 
