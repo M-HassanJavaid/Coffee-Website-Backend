@@ -207,8 +207,6 @@ cartRouter.get('/me', checkAuth, async (req, res) => {
         // valid
         const { totalPrice, items, valid, status, message } = await validateAndUpdateCartItems(userCart.items)
 
-        console.log('is valid:', valid);
-
         if (!valid) {
             return res.status(status).json({
                 ok: false,
@@ -342,13 +340,15 @@ cartRouter.get('/item/:cartItemId', checkAuth, async (req, res) => {
 
         const userCart = await Cart.findOne({ user: userId }).populate('items.product');
 
+        console.log('user Cart =>' + userCart)
+        
         if (!userCart) {
             return res.status(404).json({
                 ok: false,
                 message: "User cart not found."
             });
         }
-
+        
         const cartItem = userCart.items.id(cartItemId);
 
         if (!cartItem) {

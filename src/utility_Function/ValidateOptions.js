@@ -78,7 +78,7 @@ async function validateOptions(orderedOptions, productId) {
 
         // Checking is option required
         if (!orderedOption.value && !productOption.isRequired) {
-            break;
+            continue;
         }
 
         for (const optionValue of availableValues) {
