@@ -361,7 +361,7 @@ cartRouter.get('/item/:cartItemId', checkAuth, async (req, res) => {
         res.status(200).json({
             ok: true,
             message: 'Cart item sent successfully!',
-            item: cartItem.toObject()
+            item: cartItem.toObject(),
         });
 
     } catch (error) {

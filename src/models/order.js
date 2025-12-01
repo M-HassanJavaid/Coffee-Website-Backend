@@ -28,7 +28,7 @@ const addressSchema = new mongoose.Schema({
   },
   country: { 
     type: String, 
-    default: "Pakistan" 
+    required: true
   },
   landmark: { 
     type: String, 
@@ -44,7 +44,6 @@ const selectedOptionsSchema = new mongoose.Schema({
 
     value: {
         type: String,
-        required: true,
     }
 } , {_id: false})
 
@@ -99,7 +98,7 @@ const productSchema = new mongoose.Schema({
     },
     note:{
         type: String,
-        minLength: 3, 
+        minLength: 0, 
         maxLength: 300,
     },
     selectedOptions:{
