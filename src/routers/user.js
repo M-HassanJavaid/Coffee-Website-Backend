@@ -34,6 +34,46 @@ userRouter.get('/profile', checkAuth, async (req, res) => {
     }
 });
 
+userRouter.post('/update/address' , checkAuth ,  async (req , res)=>{
+    try {
+        let { phone , street , city , state , postalCode , country , landmark } = req.body;
+        let { userId } = req.user;
+
+        let user = await User.findById(userId);
+
+        if (!phone || !street || !city || !state || !postalCode || !country || !landmark) {
+            return res.status(404).json({
+                ok: false,
+                message: 'Something is missing in address.'
+            })
+        }
+
+        user.address = {
+            phone, 
+            street,
+            city,
+            state,
+            postalCode,
+            country,
+            landmark
+        }
+
+        let updatedUser = await user.save();
+
+        res.status(200).json({
+            ok: true,
+            message: 'User address has saved successfully.',
+            user: updatedUser
+        })
+    } catch (error) {
+
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
+    }
+})
+
 module.exports = {
     userRouter
 }

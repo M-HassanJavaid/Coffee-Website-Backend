@@ -9,7 +9,7 @@ const { Cart } = require('../models/cart.js');
 const { validateAndUpdateCartItems } = require('../utility_Function/updateCartItem.js');
 const { calculatePopularityScore } = require('../utility_Function/calcPopularitoryScore.js');
 const { Product } = require('../models/product.js');
-
+const { createAnylaticsEvent } = require('../utility_Function/createNewAnylaticsEvent.js')
 
 const orderRouter = express.Router();
 
@@ -190,6 +190,13 @@ orderRouter.post('/checkout', checkAuth, async (req, res) => {
         
         updatePopularitoryScore(items)
 
+        createAnylaticsEvent({
+            event: 'order',
+            user: userId,
+            note: note,
+            orderId: createdOrder._id
+        })
+
     } catch (error) {
         res.status(500).json({
             ok: false,
@@ -258,6 +265,14 @@ orderRouter.put('/cancel/:orderId', checkAuth, async (req, res) => {
         })
 
         popularitoryScoreForCancelOrder(order.items)
+
+        createAnylaticsEvent({
+            event: 'cancel_order',
+            user: userId,
+            orderId: order._id,
+            note: order.note
+            
+        })
 
     } catch (error) {
 

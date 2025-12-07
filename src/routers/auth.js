@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { sendVerificationEmail } = require('../utility_Function/sendVerifcationEmail.js');
 const { Cart } = require('../models/cart.js')
+const { createAnylaticsEvent } = require('../utility_Function/createNewAnylaticsEvent.js')
 
 //middlewares
 
@@ -90,6 +91,13 @@ authRouter.post('/signup', async (req, res) => {
             isVerificationEmailSent: isSend
         });
 
+        createAnylaticsEvent({
+            event: 'signup',
+            user: savedUser._id
+        })
+
+
+
     } catch (error) {
 
         res.status(500).json({
@@ -124,6 +132,11 @@ authRouter.get('/verifyEmail', async (req, res) => {
         await user.save();
 
         res.redirect('https://www.google.com/?verified=true');
+
+        createAnylaticsEvent({
+            event: 'email_verified',
+            user: user._id
+        })
     } catch (error) {
         console.log(error.message)
         res.send(error.message)

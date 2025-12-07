@@ -2,12 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Types;
 const { Cart } = require('../models/cart.js');
+const { Anylatics } = require('../models/Analytics.js')
 const { checkAuth } = require('../middleware/checkAuth.js');
 const { validateOptions } = require('../utility_Function/ValidateOptions.js');
 const { Product } = require('../models/product.js');
 const { compareOptions } = require('../utility_Function/compareOptions.js');
 const { validateAndUpdateCartItems } = require('../utility_Function/updateCartItem.js');
 const { calculatePopularityScore } = require('../utility_Function/calcPopularitoryScore.js');
+const { createAnylaticsEvent } = require('../utility_Function/createNewAnylaticsEvent.js')
 
 
 const cartRouter = express.Router();
@@ -96,10 +98,20 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
                 let totalPrice = (Number(totalExtraPrice) + Number(price)) * (Number(item.quantity));
                 item.price.total = Number(totalPrice);
                 item.price.totalExtraPrice = Number(totalExtraPrice) * Number(item.quantity);
-                item.note = note ?? '';
+                item.note = note ? note : item.note;
 
                 quantityAddedInCart = quantity;
-                itemId = item._id.toString()
+                itemId = item._id.toString();
+
+                req.event = {
+                    event: 'update_cart_item',
+                    user: userId,
+                    productId: productId,
+                    quantity: Number(item.quantity),
+                    selectedOptions: item.selectedOptions,
+                    cartItemId: item._id,
+                    note: item.note
+                }
 
                 break;
             }
@@ -125,6 +137,16 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
                 }
             });
 
+            req.event = {
+                event: 'add_to_cart',
+                user: userId,
+                productId: productId,
+                quantity: quantity,
+                selectedOptions: selectedOptions,
+                cartItemId: itemId,
+                note: note ?? ''
+            }
+
             quantityAddedInCart = quantity;
 
         }
@@ -149,27 +171,29 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
 
         setImmediate(() => popularityScoreForAddToCart(product, quantityAddedInCart))
 
-        if (found) {
-            return res.json({
+        console.log('found => ' + found)
+
+        if (!found) {
+            res.json({
+                ok: true,
+                message: 'New product has added to cart.',
+                id: itemId,
+                cart: updatedCart
+            })
+        } else {
+
+            res.json({
                 ok: true,
                 message: 'This product were already in cart, so we increased the quantity.',
                 cartItemId: itemId,
                 cart: updatedCart
-            })
+            });
         }
 
-
-        res.json({
-            ok: true,
-            message: 'New product has added to cart.',
-            id: itemId,
-            cert: updatedCart
-        })
-
-
-
+        createAnylaticsEvent(req.event)
 
     } catch (error) {
+
 
         res.status(500).json({
             ok: false,
@@ -183,8 +207,6 @@ cartRouter.post('/add', checkAuth, async (req, res) => {
 cartRouter.get('/me', checkAuth, async (req, res) => {
 
     try {
-
-        console.log('Fetching cart for user:', req.user);
 
         let userId = req.user.userId;
 
@@ -270,6 +292,16 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
                 let productId = item.product;
                 setImmediate(() => {
                     updatePopularitoryScore(productId, item.quantity)
+                });
+
+                createAnylaticsEvent({
+                    event: 'remove_from_cart',
+                    user: userId,
+                    productId: productId,
+                    quantity: quantity,
+                    selectedOptions: item.selectedOptions,
+                    cartItemId: item._id,
+                    note: item.note
                 })
 
                 return false
@@ -303,6 +335,8 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
             message: 'Cart item has successfully removed from cart!',
             cart: updatedCart
         })
+
+
 
     } catch (error) {
 
@@ -341,14 +375,14 @@ cartRouter.get('/item/:cartItemId', checkAuth, async (req, res) => {
         const userCart = await Cart.findOne({ user: userId }).populate('items.product');
 
         console.log('user Cart =>' + userCart)
-        
+
         if (!userCart) {
             return res.status(404).json({
                 ok: false,
                 message: "User cart not found."
             });
         }
-        
+
         const cartItem = userCart.items.id(cartItemId);
 
         if (!cartItem) {
@@ -416,8 +450,19 @@ cartRouter.put('/update/:cartItemId', checkAuth, async (req, res) => {
 
                 if (note) item.note = note;
                 if (quantity) item.quantity = quantity;
-                if (selectedOptions) item.selectedOptions = selectedOptions
+                if (selectedOptions) item.selectedOptions = selectedOptions;
 
+                createAnylaticsEvent({
+                    event: 'update_cart_item',
+                    user: userId,
+                    cartItemId: item._id,
+                    quantity: item.quantity,
+                    selectedOptions: item.selectedOptions,
+                    note: item.note,
+                    productId: item.product._id
+                });
+
+                break;
             }
         }
 
@@ -501,6 +546,11 @@ cartRouter.delete('/clear', checkAuth, async (req, res) => {
             ok: true,
             message: 'Your cart has clear.',
             cart: updatedCart
+        })
+
+        createAnylaticsEvent({
+            action: 'clear_cart',
+            user: userId
         })
 
     } catch (error) {
