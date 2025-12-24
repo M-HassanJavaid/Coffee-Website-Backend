@@ -11,7 +11,8 @@ const { authRouter } = require('./routers/auth.js')
 const { productRouter } = require('./routers/product.js')
 const { userRouter } = require('./routers/user.js')
 const { orderRouter } = require('./routers/order.js')
-const { cartRouter } = require('./routers/Cart.js')
+const { cartRouter } = require('./routers/Cart.js');
+const { AnalyticsRouter } = require('./routers/analytics.js')
 
 // Middleware
 
@@ -28,9 +29,10 @@ app.use(cookieParser());
 //Router API
 app.use('/auth' , authRouter);
 app.use('/product' , productRouter);
-app.use('/user' , userRouter)
-app.use('/order' , orderRouter)
-app.use('/cart' , cartRouter)
+app.use('/user' , userRouter);
+app.use('/order' , orderRouter);
+app.use('/cart' , cartRouter);
+app.use('/analytics' , AnalyticsRouter );
 
 // Routes
 app.get('/', (req, res) => {
