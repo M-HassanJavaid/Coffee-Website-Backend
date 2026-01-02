@@ -298,7 +298,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
                     event: 'remove_from_cart',
                     user: userId,
                     productId: productId,
-                    quantity: quantity,
+                    quantity: item.quantity,
                     selectedOptions: item.selectedOptions,
                     cartItemId: item._id,
                     note: item.note
