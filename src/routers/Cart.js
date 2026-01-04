@@ -352,11 +352,15 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
 // function to update product popularitory score on updating product quntity in cart
 async function updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, newQuantity) {
     try {
-        console.log('comes to update product')
         let product = await Product.findById(productId);
 
-        product.addedInCart = product.addedInCart - oldQuantity;
-        product.addedInCart = product.addedInCart + newQuantity;
+        const delta = newQuantity - oldQuantity;
+
+        product.addedInCart = Math.max(
+            0,
+            product.addedInCart + delta
+        );
+
         let newPopularitoryScore = calculatePopularityScore(product);
         product.popularityScore = newPopularitoryScore;
 
