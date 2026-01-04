@@ -19,6 +19,7 @@ const cartRouter = express.Router();
 async function popularityScoreForAddToCart(product, qtyToAdd) {
     try {
         product.addedInCart = product.addedInCart + qtyToAdd;
+        console.log(product.addedInCart)
         let newPopularitoryScore = calculatePopularityScore(product)
         product.popularityScore = newPopularitoryScore;
         await product.save();
@@ -351,6 +352,7 @@ cartRouter.delete('/remove/:cartItemId', checkAuth, async (req, res) => {
 // function to update product popularitory score on updating product quntity in cart
 async function updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, newQuantity) {
     try {
+        console.log('comes to update product')
         let product = await Product.findById(productId);
 
         product.addedInCart = product.addedInCart - oldQuantity;
@@ -360,6 +362,7 @@ async function updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, ne
 
         await product.save()
 
+        console.log('product update successfully')
     } catch (error) {
 
         console.log(error.message)
@@ -498,7 +501,9 @@ cartRouter.put('/update/:cartItemId', checkAuth, async (req, res) => {
             cart: updatedCart
         })
 
-        if (quantity) updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, quantity)
+        if (quantity){
+            await updatePopularitoryScoreOnProductUpdate(productId, oldQuantity, quantity)
+        } 
 
     } catch (error) {
 

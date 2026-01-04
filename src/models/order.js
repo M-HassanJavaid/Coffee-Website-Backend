@@ -155,7 +155,7 @@ const orderSchema = new mongoose.Schema(
     note: {
       type: String,
       maxLength: 300,
-      default: "Not provided!"
+      default: null
     },
 
     orderId:{

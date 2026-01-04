@@ -75,7 +75,9 @@ productRouter.post('/add', checkAuth, checkAdmin, upload.single('image'), async 
 productRouter.get('/all', async (req, res) => {
     try {
         let filter = {}
-        let { category, query, maxPrice, minPrice, availaible } = req.query;
+        let { category, query, maxPrice, minPrice, available } = req.query;
+        maxPrice = Number(maxPrice);
+        minPrice = Number(minPrice);
         if (category) filter.category = category;
         if (query) {
             filter.$or = [
@@ -93,14 +95,19 @@ productRouter.get('/all', async (req, res) => {
                 }
             ]
         }
-        if (maxPrice) filter.discountedPrice = { $lte: maxPrice }
-        if (minPrice) filter.discountedPrice = { $gte: minPrice }
-        if (availaible) filter.isAvailaible = true
+
+        if (maxPrice || minPrice) filter.discountedPrice = {}
+
+        if (maxPrice) filter.discountedPrice.$lte = maxPrice;
+        if (minPrice) filter.discountedPrice.$gte = minPrice;
+        
+        if (available === 'true') filter.isAvailaible = true;
+        if (available === 'false') filter.isAvailaible = false;
 
         let sortQuery = {}
         if (req.query.sort === 'price_ascending') sortQuery.discountedPrice = 1;
         if (req.query.sort === 'price_decending') sortQuery.discountedPrice = -1;
-        if (req.query.sort === 'discount') sortQuery.discountedPrice = -1
+        if (req.query.sort === 'discount') sortQuery.discount = -1
 
         const products = await Product.find(filter).sort(sortQuery);
 
@@ -289,7 +296,27 @@ productRouter.get('/popular/:quantity' , async (req , res)=>{
         })
 
     }
-})
+});
+
+productRouter.put('/refresh', async (req, res) => {
+    try {
+        const products = await Product.find();
+
+        for (let i = 0; i < products.length; i++) {
+            products[i].sales = 0;
+            products[i].popularityScore = 0;
+            products[i].impressions = 0;
+            products[i].addedInCart = 0;
+
+            await products[i].save();
+        }
+
+        res.send('Products have been refreshed');
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 
 module.exports = {
     productRouter

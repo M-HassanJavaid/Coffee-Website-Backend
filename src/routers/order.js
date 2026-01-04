@@ -121,7 +121,8 @@ async function updatePopularitoryScore(items) {
             product.sales = product.sales + quantity;
             let popularityScore = calculatePopularityScore(product);
             product.popularityScore = popularityScore;
-            await product.save()
+            await product.save();
+            console.log(`product updated => ${product.name}`)
         }
 
     } catch (error) {
@@ -188,7 +189,7 @@ orderRouter.post('/checkout', checkAuth, async (req, res) => {
 
         await userCart.save()
         
-        updatePopularitoryScore(items)
+        await updatePopularitoryScore(items)
 
         createAnylaticsEvent({
             event: 'order',
