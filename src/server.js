@@ -19,8 +19,8 @@ const { AnalyticsRouter } = require('./routers/analytics.js')
 // Middleware
 
 app.use(cors({
-    origin: "*",
-    credentials: true
+    origin: "https://coffeeclubonline.vercel.app",
+    credentials: true,
 }));
 
 app.use(express.json());
