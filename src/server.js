@@ -19,7 +19,10 @@ const { AnalyticsRouter } = require('./routers/analytics.js')
 // Middleware
 
 app.use(cors({
-    origin: "https://coffeeclubonline.vercel.app",
+    origin: [
+        "http://localhost:5173",
+        "https://coffeeclubonline.vercel.app"
+    ],
     credentials: true,
 }));
 

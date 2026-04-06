@@ -210,7 +210,7 @@ orderRouter.get('/me', checkAuth, async (req, res) => {
     try {
         let userId = req.user.userId;
 
-        let userOrders = await Order.find({ user: new ObjectId(userId) });
+        let userOrders = await Order.find({ user: new ObjectId(userId) }).populate('items.product');
 
         res.status(200).json({
             ok: true,

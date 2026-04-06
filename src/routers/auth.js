@@ -149,7 +149,12 @@ authRouter.get('/refreshToken', async (req, res) => {
 
         let { token } = req.cookies;
 
-        if (!token) throw new Error('Token not found.')
+        if (!token) {
+            return res.status(401).json({
+                ok: false,
+                message: 'Token not found.'
+            });
+        }
 
         const decode = await jwt.verify(token, process.env.JWT_SECRET)
 
